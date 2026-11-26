@@ -1,0 +1,330 @@
+<title>Music Bingo Card</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;600;700&display=swap">
+<style>
+/* Layout: one centered game card on a stage-light backdrop; grid first, controls and notes below. Single dark look by choice. */
+:root {
+  color-scheme: dark;
+  --stage: #120b1c;
+  --stage-glow-a: #ff2d95;
+  --stage-glow-b: #1fd1e8;
+  --card: #221a2e;
+  --card-edge: #3a2d4d;
+  --ink: #f6f0ff;
+  --ink-soft: #b9abcf;
+  --accent: #ff4fa8;
+  --win: #ffe14d;
+  --yellow-a: #fff176; --yellow-b: #f5c400;
+  --green-a: #8be28f;  --green-b: #2fa84f;
+  --blue-a: #6cc4ff;   --blue-b: #1e7fe0;
+  --pink-a: #ff9cc4;   --pink-b: #e8357a;
+  --purple-a: #c98cff; --purple-b: #8a2bd6;
+  --mark: #120b1c;
+  --display: "Bungee", "Arial Black", Impact, sans-serif;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+html, body { height: 100%; }
+body {
+  background:
+    radial-gradient(60% 50% at 10% 0%, color-mix(in srgb, var(--stage-glow-a) 35%, transparent), transparent 70%),
+    radial-gradient(60% 50% at 90% 100%, color-mix(in srgb, var(--stage-glow-b) 30%, transparent), transparent 70%),
+    var(--stage);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--body);
+  padding-block: 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--card);
+  border: 2px solid var(--card-edge);
+  border-radius: 20px;
+  padding: clamp(16px, 5vw, 28px);
+  box-shadow: 0 20px 60px rgb(0 0 0 / .55), 0 0 0 1px rgb(255 255 255 / .03) inset;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(26px, 7vw, 34px);
+  letter-spacing: .04em;
+  color: var(--accent);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+  line-height: 1;
+}
+.card-no { font-size: 12px; color: var(--ink-soft); letter-spacing: .12em; text-transform: uppercase; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(5px, 1.6vw, 9px);
+}
+.cell {
+  aspect-ratio: 1;
+  max-width: 100%;
+  border: 2px solid rgb(0 0 0 / .55);
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  transition: transform .12s ease, filter .12s ease, box-shadow .2s ease;
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / .18), inset 0 2px 0 rgb(255 255 255 / .35);
+  -webkit-tap-highlight-color: transparent;
+}
+.cell:active { transform: scale(.93); }
+@media (hover: hover) { .cell:hover { filter: brightness(1.08); } }
+.cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.yellow { background: linear-gradient(135deg, var(--yellow-a), var(--yellow-b)); }
+.green  { background: linear-gradient(135deg, var(--green-a), var(--green-b)); }
+.blue   { background: linear-gradient(135deg, var(--blue-a), var(--blue-b)); }
+.pink   { background: linear-gradient(135deg, var(--pink-a), var(--pink-b)); }
+.purple { background: linear-gradient(135deg, var(--purple-a), var(--purple-b)); }
+
+.cell.marked::before, .cell.marked::after {
+  content: "";
+  position: absolute;
+  left: 12%; top: calc(50% - 3px);
+  width: 76%; height: 6px;
+  background: var(--mark);
+  border-radius: 3px;
+}
+.cell.marked::before { transform: rotate(45deg); }
+.cell.marked::after  { transform: rotate(-45deg); }
+.cell.win { box-shadow: 0 0 0 3px var(--win), 0 0 16px color-mix(in srgb, var(--win) 70%, transparent); border-color: var(--win); }
+
+.deal .cell { animation: flip .35s ease both; animation-delay: calc(var(--i) * 18ms); }
+@keyframes flip { from { transform: rotateY(90deg) scale(.85); } to { transform: none; } }
+
+.status {
+  min-height: 1.4em;
+  margin: -4px 0 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.status.bingo { color: var(--win); font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: .05em; }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+button.btn {
+  font: 700 15px/1 var(--body);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 15px 12px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  color: var(--ink);
+  transition: transform .12s ease, background .15s ease, border-color .15s ease;
+}
+button.btn:active { transform: translateY(1px) scale(.98); }
+button.btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), #d81b7a); }
+.btn-primary.confirm { background: var(--win); color: var(--mark); }
+.btn-ghost { background: transparent; border-color: var(--card-edge); color: var(--ink); }
+@media (hover: hover) { .btn-ghost:hover { border-color: var(--ink-soft); } }
+.btn-ghost:disabled { opacity: .45; cursor: default; }
+
+.notes { display: flex; flex-direction: column; gap: 8px; }
+.notes label { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-soft); }
+.notes-row { display: flex; gap: 8px; align-items: stretch; }
+textarea {
+  flex: 1; min-width: 0;
+  min-height: 64px;
+  resize: vertical;
+  border-radius: 12px;
+  border: 2px solid var(--card-edge);
+  background: #fff;
+  color: #1a1224;
+  padding: 12px 14px;
+  font: 600 20px/1.3 var(--body);
+  text-align: center;
+}
+textarea:focus { outline: none; border-color: var(--accent); }
+.notes-row .btn { padding: 0 14px; font-size: 13px; }
+
+.legend { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgb(0 0 0 / .5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .deal .cell { animation: none; }
+  .cell, button.btn { transition: none; }
+}
+</style>
+
+<main class="card">
+  <header>
+    <h1>MUSIC BINGO</h1>
+    <span class="card-no" id="cardNo">Card #0000</span>
+  </header>
+
+  <div class="grid" id="grid" role="grid" aria-label="Bingo card, 5 by 5"></div>
+  <p class="status" id="status" aria-live="polite">0 of 25 marked</p>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="newCard" type="button">New card</button>
+    <button class="btn btn-ghost" id="clearMarks" type="button">Clear marks</button>
+  </div>
+
+  <div class="notes">
+    <label for="notes">Notes</label>
+    <div class="notes-row">
+      <textarea id="notes" placeholder="Write here..."></textarea>
+      <button class="btn btn-ghost" id="clearNotes" type="button">Clear</button>
+    </div>
+  </div>
+
+  <div class="legend" aria-hidden="true">
+    <span><i class="yellow"></i>Yellow</span>
+    <span><i class="blue"></i>Blue</span>
+    <span><i class="purple"></i>Purple</span>
+    <span><i class="green"></i>Green</span>
+    <span><i class="pink"></i>Pink</span>
+  </div>
+</main>
+
+<script>
+(() => {
+  const COLORS = ["yellow", "blue", "purple", "green", "pink"];
+  const N = 5;
+  const KEY = "song-bingo-v1";
+  const grid = document.getElementById("grid");
+  const statusEl = document.getElementById("status");
+  const cardNoEl = document.getElementById("cardNo");
+  const newBtn = document.getElementById("newCard");
+  const clearBtn = document.getElementById("clearMarks");
+  const notes = document.getElementById("notes");
+
+  let state = { colors: [], marked: [], cardNo: 0, notes: "" };
+
+  // Five of each color, shuffled, with no two matching colors touching side by side or top to bottom.
+  function dealColors() {
+    const out = new Array(N * N);
+    const left = Object.fromEntries(COLORS.map(c => [c, N]));
+    const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    function place(i) {
+      if (i === N * N) return true;
+      const up = i >= N ? out[i - N] : null;
+      const lf = i % N ? out[i - 1] : null;
+      for (const c of shuffle([...COLORS])) {
+        if (!left[c] || c === up || c === lf) continue;
+        out[i] = c; left[c]--;
+        if (place(i + 1)) return true;
+        left[c]++;
+      }
+      return false;
+    }
+    if (!place(0)) return shuffle(COLORS.flatMap(c => Array(N).fill(c)));
+    return out;
+  }
+
+  function lines() {
+    const L = [];
+    for (let r = 0; r < N; r++) L.push([...Array(N)].map((_, c) => r * N + c));
+    for (let c = 0; c < N; c++) L.push([...Array(N)].map((_, r) => r * N + c));
+    L.push([...Array(N)].map((_, i) => i * N + i));
+    L.push([...Array(N)].map((_, i) => i * N + (N - 1 - i)));
+    return L;
+  }
+  const LINES = lines();
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.colors) && s.colors.length === N * N) return s;
+    } catch (e) {}
+    return null;
+  }
+
+  function render(animate) {
+    grid.innerHTML = "";
+    grid.classList.toggle("deal", !!animate);
+    state.colors.forEach((color, i) => {
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = `cell ${color}`;
+      cell.style.setProperty("--i", i);
+      cell.dataset.i = i;
+      grid.appendChild(cell);
+    });
+    cardNoEl.textContent = "Card #" + String(state.cardNo).padStart(4, "0");
+    update();
+    if (animate) setTimeout(() => grid.classList.remove("deal"), 900);
+  }
+
+  function update() {
+    const marked = new Set(state.marked);
+    const wins = LINES.filter(l => l.every(i => marked.has(i)));
+    const winCells = new Set(wins.flat());
+    [...grid.children].forEach((cell, i) => {
+      const on = marked.has(i);
+      cell.classList.toggle("marked", on);
+      cell.classList.toggle("win", winCells.has(i));
+      cell.setAttribute("aria-pressed", on);
+      cell.setAttribute("aria-label", `Row ${Math.floor(i / N) + 1}, column ${i % N + 1}, ${state.colors[i]}${on ? ", marked" : ""}`);
+    });
+    if (wins.length) {
+      statusEl.textContent = wins.length === 1 ? "BINGO!" : `BINGO ×${wins.length}`;
+      statusEl.classList.add("bingo");
+    } else {
+      statusEl.textContent = `${marked.size} of ${N * N} marked`;
+      statusEl.classList.remove("bingo");
+    }
+    clearBtn.disabled = marked.size === 0;
+  }
+
+  function newCard() {
+    state.colors = dealColors();
+    state.marked = [];
+    state.cardNo = 1 + Math.floor(Math.random() * 9999);
+    save();
+    render(true);
+  }
+
+  grid.addEventListener("click", e => {
+    const cell = e.target.closest(".cell");
+    if (!cell) return;
+    const i = +cell.dataset.i;
+    const at = state.marked.indexOf(i);
+    if (at >= 0) state.marked.splice(at, 1); else state.marked.push(i);
+    save();
+    update();
+  });
+
+  // Ask for a second tap before throwing away a card that has marks on it.
+  let confirmTimer = null;
+  function resetNewBtn() { newBtn.classList.remove("confirm"); newBtn.textContent = "New card"; confirmTimer = null; }
+  newBtn.addEventListener("click", () => {
+    if (state.marked.length && !confirmTimer) {
+      newBtn.classList.add("confirm");
+      newBtn.textContent = "Tap to confirm";
+      confirmTimer = setTimeout(resetNewBtn, 2500);
+      return;
+    }
+    clearTimeout(confirmTimer); resetNewBtn();
+    newCard();
+  });
+
+  clearBtn.addEventListener("click", () => { state.marked = []; save(); update(); });
+  document.getElementById("clearNotes").addEventListener("click", () => { notes.value = ""; state.notes = ""; save(); notes.focus(); });
+  notes.addEventListener("input", () => { state.notes = notes.value; save(); });
+
+  const saved = load();
+  if (saved) { state = { notes: "", marked: [], cardNo: 1, ...saved }; notes.value = state.notes || ""; render(false); }
+  else newCard();
+})();
+</script>
