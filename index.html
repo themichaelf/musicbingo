@@ -323,8 +323,9 @@ textarea:focus { outline: none; border-color: var(--accent); }
   document.getElementById("clearNotes").addEventListener("click", () => { notes.value = ""; state.notes = ""; save(); notes.focus(); });
   notes.addEventListener("input", () => { state.notes = notes.value; save(); });
 
+  // Every visit deals a fresh card; only the notes carry over from last time.
   const saved = load();
-  if (saved) { state = { notes: "", marked: [], cardNo: 1, ...saved }; notes.value = state.notes || ""; render(false); }
-  else newCard();
+  if (saved && saved.notes) { state.notes = saved.notes; notes.value = saved.notes; }
+  newCard();
 })();
 </script>
